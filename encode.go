@@ -4,12 +4,11 @@ import (
     "fmt"
     "os"
     "io"
-    "errors"
-    "math"
+    //"math"
     "log"
     "image"
-    _ "image/png"
-    "draw"
+    "image/png"
+    "image/draw"
 )
 
 func main() {
@@ -18,7 +17,7 @@ func main() {
     }
 
     // open image
-    file, err := os.Open(Args[1])
+    file, err := os.Open(os.Args[1])
     if (err != nil) {
         log.Fatal(err)
     }
@@ -30,19 +29,21 @@ func main() {
     }
     defer file.Close()
 
-    msg := getmsg(image_max_capacity(im.Width, im.Height))
+    b := im.Bounds()
+    msg := getmsg(image_max_capacity(b.Max.X, b.Max.Y))
 
     // create new image with msg encoded into it
-    new_image, err := encode(msg, im)
-    if (err != nil) {
-        log.Fatal(err)
-    }
+    new_image := encode(msg, im)
+    //if (err != nil) {
+    //    log.Fatal(err)
+    //}
 
     // create new file
+    var new_file *os.File
     if (len(os.Args) < 3) {
-        new_file, err := os.Create(os.Args[1] + ".encoded")
+        new_file, err = os.Create(os.Args[1] + ".encoded")
     } else {
-        new_file, err := os.Create(os.Args[2])
+        new_file, err = os.Create(os.Args[2])
     }
 
     if (err != nil) {
@@ -51,44 +52,73 @@ func main() {
     defer new_file.Close()
 
     // save image
-    image.Encode(new_file, new_image)
+    png.Encode(new_file, new_image)
 }
 
-func getmsg (max int) string {
-    max_chars := bits_to_char(max)
-    msg := make(string, max_chars)
+func getmsg (max int) []byte {
+    max_chars := bytes_to_char(max, 7)
+    msg := make([]byte, max_chars)
 
     var in string
     _, e := fmt.Scanf("%s", &in)
 
     // if something happens when reading stdin or there's not enough space to store characters just return an empty string
     if (e != nil || max_chars-1 < 1) {
-        return ""
+        return make([]byte, 0)
     }
 
     var actual_chars int = len(in)
-    var i int = 1
+    var i int = 0
 
+    // get words from stdin until EOF or reaching max characters
     for e != io.EOF && actual_chars < max_chars-1 {
         for j,c := range in {
-            msg[j+(actual_chars*i)] = c
+            msg[j+(actual_chars*i)] = byte(c)
+
+            //fmt.Println(i, j)
         }
 
-        fmt.Scanf("%s", &in)
+        _, e = fmt.Scanf("%s", &in)
         i++
-        in = ' ' + in
+        in = " " + in
         actual_chars+=len(in)
     }
 
+    msg[max_chars-1] = '\000'
     return msg
 }
 
 func image_max_capacity (width int, height int) int {
-    // return total bits in pixels RGBA
-    // 32 bits for every pixel
-    return width * height * 4 * 8
+    // return total bytes in pixels RGBA
+    // 4 bytes for every pixel
+    return width * height * 4
 }
 
-func encode (msg string, img image.Image) (image.RGBA, err error) {
-    
+func encode (msg []byte, img image.Image) (*image.RGBA) {
+    rgba := image.NewRGBA(img.Bounds())
+    draw.Draw(rgba, rgba.Bounds(), img, image.Point{0,0}, draw.Src)
+
+    for i,n := range msg {
+
+        for j:=(7*i); j<7*(i+1); j++ {
+            // change last bit from color rgba value
+            // matching byte from every part of msg letter
+            rgba.Pix[j] = uint8(changebit(int(rgba.Pix[j]), 0, getbit(int(n), j-(7*i))))
+        }
+    }
+
+    return rgba
+}
+
+func changebit (n int, pos uint, b int) int {
+    return (n & ^(1 << pos)) | (b << pos)
+}
+
+func getbit (n int, pos int) int {
+    return (n >> 0) & 1
+}
+
+func bytes_to_char (bytes int, char_bit int) int {
+    //return int(math.Floor(float64(bytes)/4/4/7))
+    return bytes / char_bit
 }
