@@ -9,6 +9,7 @@ import (
     "image"
     "image/png"
     "image/draw"
+    "./bitoperations"
 )
 
 func main() {
@@ -74,8 +75,6 @@ func getmsg (max int) []byte {
     for e != io.EOF && actual_chars < max_chars-1 {
         for j,c := range in {
             msg[j+(actual_chars*i)] = byte(c)
-
-            //fmt.Println(i, j)
         }
 
         _, e = fmt.Scanf("%s", &in)
@@ -103,22 +102,13 @@ func encode (msg []byte, img image.Image) (*image.RGBA) {
         for j:=(7*i); j<7*(i+1); j++ {
             // change last bit from color rgba value
             // matching byte from every part of msg letter
-            rgba.Pix[j] = uint8(changebit(int(rgba.Pix[j]), 0, getbit(int(n), j-(7*i))))
+            rgba.Pix[j] = uint8(bitoperations.Changebit(int(rgba.Pix[j]), 0, bitoperations.Getbit(int(n), j-(7*i))))
         }
     }
 
     return rgba
 }
 
-func changebit (n int, pos uint, b int) int {
-    return (n & ^(1 << pos)) | (b << pos)
-}
-
-func getbit (n int, pos int) int {
-    return (n >> 0) & 1
-}
-
 func bytes_to_char (bytes int, char_bit int) int {
-    //return int(math.Floor(float64(bytes)/4/4/7))
     return bytes / char_bit
 }

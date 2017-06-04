@@ -13,8 +13,16 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
+# Object and library files
+*.a
+*.o
+
 # VIM
 *.swp
 
 # IMG
 *.png*
+
+# Binaries
+decode
+encode
