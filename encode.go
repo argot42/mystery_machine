@@ -4,7 +4,6 @@ import (
     "fmt"
     "os"
     "io"
-    //"math"
     "log"
     "image"
     "image/png"
@@ -31,10 +30,11 @@ func main() {
     defer file.Close()
 
     b := im.Bounds()
-    msg := getmsg(image_max_capacity(b.Max.X, b.Max.Y))
+    msg := getmsg(image_max_capacity(b.Max.X, b.Max.Y), '\000')
+    //fmt.Println(msg)
 
     // create new image with msg encoded into it
-    new_image := encode(msg, im)
+    new_image := encode(msg, 7, im)
     //if (err != nil) {
     //    log.Fatal(err)
     //}
@@ -52,14 +52,12 @@ func main() {
     }
     defer new_file.Close()
 
-    fmt.Println(new_image)
     // save image
-    png.Encode(new_file, new_image, nil)
+    png.Encode(new_file, new_image)
 }
 
-func getmsg (max int) []byte {
+func getmsg (max int, last_char byte) []byte {
     max_chars := bytes_to_char(max, 7)
-    msg := make([]byte, max_chars)
 
     var in string
     _, e := fmt.Scanf("%s", &in)
@@ -70,48 +68,50 @@ func getmsg (max int) []byte {
     }
 
     var actual_chars int = len(in)
-    var i int = 0
+    var msg []byte
 
     // get words from stdin until EOF or reaching max characters
     for e != io.EOF && actual_chars <= max_chars-1 {
-        for j,c := range in {
-            msg[j+(actual_chars*i)] = byte(c)
+        fmt.Println(actual_chars)
+        for _,c := range in {
+            msg = append(msg, byte(c))
         }
 
         _, e = fmt.Scanf("%s", &in)
-        i++
         in = " " + in
         actual_chars+=len(in)
     }
 
-    msg[max_chars-1] = '\000'
+    msg = append(msg, last_char)
+
     return msg
 }
 
 func image_max_capacity (width int, height int) int {
     // return total bytes in pixels RGBA
     // 4 bytes for every pixel
-    return width * height * 4
+    // 3 for the moment because I can't use alpha channel
+    return width * height * 3 //4
 }
 
-func encode (msg []byte, img image.Image) (*image.RGBA) {
-    rgba := image.NewRGBA(img.Bounds())
+func encode (msg []byte, bits int, img image.Image) (*image.RGBA) {
+    bounds := img.Bounds()
+    rgba := image.NewRGBA(bounds)
     draw.Draw(rgba, rgba.Bounds(), img, image.Point{0,0}, draw.Src)
 
-    for i,n := range msg {
+    var channel int = 0
 
-        //fmt.Println("char: ", n, "\n-------")
-        for j:=(7*i); j<7*(i+1); j++ {
-            // change last bit from color rgba value
-            // matching byte from every part of msg letter
-            //fmt.Printf("%d", bitoperations.Getbit(int(n), uint(j-(7*i))))
-            //fmt.Println(uint8(bitoperations.Changebit(int(rgba.Pix[j]), 0, bitoperations.Getbit(int(n), uint(j-(7*i))))))
-            rgba.Pix[j] = uint8(bitoperations.Changebit(int(rgba.Pix[j]), 0, bitoperations.Getbit(int(n), uint(j-(7*i)))))
+    for i:=0; i<len(msg); i++ {
+        for b:=0; b<bits; b++ {
+            if ((channel+1) % 4 == 0) { channel++ }
+
+            rgba.Pix[channel] = uint8(bitoperations.Changebit(int(rgba.Pix[channel]), 0, bitoperations.Getbit(int(msg[i]), uint(b))))
+
+            channel++
         }
-        //fmt.Printf("\n\n")
     }
 
-    //fmt.Println(rgba)
+
     return rgba
 }
 

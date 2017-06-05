@@ -23,7 +23,6 @@ func main() {
 
     // decode image
     im, err := png.Decode(file)
-    fmt.Println(im)
     if (err != nil) {
         log.Fatal(err)
     }
@@ -43,19 +42,20 @@ func decode (im image.Image, bits int, last_character rune) string {
     rgba := image.NewRGBA(im.Bounds())
     draw.Draw(rgba, rgba.Bounds(), im, image.Point{0,0}, draw.Src)
 
-    fmt.Println(rgba)
-
     var character int = -1
     var buffer string
+    var channel int = 0
 
-    for i:=0; character != int(last_character); i++ {
+    for character != int(last_character) {
         character = 0
 
-        // strange do while
-        j:=i*bits
-        for ok:=true; ok; ok=(j%bits != 0) {
-            character += bitoperations.Getbit(int(rgba.Pix[j]), 0) * int(math.Pow(2, float64(j-(i*bits))))
-            j++
+        for i:=0; i<bits; i++ {
+
+            if ((channel+1) % 4 == 0) { channel++ }
+
+            character += bitoperations.Getbit(int(rgba.Pix[channel]), 0) * int(math.Pow(2, float64(i)))
+
+            channel++
         }
 
         buffer += string(character)
