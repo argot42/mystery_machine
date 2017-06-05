@@ -52,8 +52,9 @@ func main() {
     }
     defer new_file.Close()
 
+    fmt.Println(new_image)
     // save image
-    png.Encode(new_file, new_image)
+    png.Encode(new_file, new_image, nil)
 }
 
 func getmsg (max int) []byte {
@@ -72,7 +73,7 @@ func getmsg (max int) []byte {
     var i int = 0
 
     // get words from stdin until EOF or reaching max characters
-    for e != io.EOF && actual_chars < max_chars-1 {
+    for e != io.EOF && actual_chars <= max_chars-1 {
         for j,c := range in {
             msg[j+(actual_chars*i)] = byte(c)
         }
@@ -99,13 +100,18 @@ func encode (msg []byte, img image.Image) (*image.RGBA) {
 
     for i,n := range msg {
 
+        //fmt.Println("char: ", n, "\n-------")
         for j:=(7*i); j<7*(i+1); j++ {
             // change last bit from color rgba value
             // matching byte from every part of msg letter
-            rgba.Pix[j] = uint8(bitoperations.Changebit(int(rgba.Pix[j]), 0, bitoperations.Getbit(int(n), j-(7*i))))
+            //fmt.Printf("%d", bitoperations.Getbit(int(n), uint(j-(7*i))))
+            //fmt.Println(uint8(bitoperations.Changebit(int(rgba.Pix[j]), 0, bitoperations.Getbit(int(n), uint(j-(7*i))))))
+            rgba.Pix[j] = uint8(bitoperations.Changebit(int(rgba.Pix[j]), 0, bitoperations.Getbit(int(n), uint(j-(7*i)))))
         }
+        //fmt.Printf("\n\n")
     }
 
+    //fmt.Println(rgba)
     return rgba
 }
 

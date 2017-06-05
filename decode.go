@@ -7,7 +7,7 @@ import (
     "math"
     "image"
     "image/draw"
-    _ "image/png"
+    "image/png"
     "./bitoperations"
 )
 
@@ -22,7 +22,8 @@ func main() {
     }
 
     // decode image
-    im, _, err := image.Decode(file)
+    im, err := png.Decode(file)
+    fmt.Println(im)
     if (err != nil) {
         log.Fatal(err)
     }
@@ -39,9 +40,8 @@ func main() {
 func decode (im image.Image, bits int, last_character rune) string {
 
     // get RGBA from image
-    b := im.Bounds()
-    rgba := image.NewRGBA(b)
-    draw.Draw(rgba, b, im, b.Min, draw.Src)
+    rgba := image.NewRGBA(im.Bounds())
+    draw.Draw(rgba, rgba.Bounds(), im, image.Point{0,0}, draw.Src)
 
     fmt.Println(rgba)
 
@@ -51,8 +51,11 @@ func decode (im image.Image, bits int, last_character rune) string {
     for i:=0; character != int(last_character); i++ {
         character = 0
 
-        for j:=i*bits; j%bits != 0; j++ {
+        // strange do while
+        j:=i*bits
+        for ok:=true; ok; ok=(j%bits != 0) {
             character += bitoperations.Getbit(int(rgba.Pix[j]), 0) * int(math.Pow(2, float64(j-(i*bits))))
+            j++
         }
 
         buffer += string(character)

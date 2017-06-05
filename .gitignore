@@ -26,3 +26,6 @@
 # Binaries
 decode
 encode
+
+# script
+*.sh
